@@ -22,6 +22,7 @@
 #include "Converter.h"
 #include "ORBmatcher.h"
 #include <thread>
+#include "Optimizer.h"
 
 namespace ORB_SLAM2
 {
@@ -90,7 +91,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
     mvbOutlier = vector<bool>(N,false);
-    Lk_distances=vector<double>(N,0.0);
+    Lk_distances=vector<double>(N, 30.0);
 
 
     // This is done only for the first Frame (or after a change in the calibration)

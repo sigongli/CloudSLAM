@@ -154,6 +154,9 @@ public:
     const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
     Vector2d obs(_measurement);
     _error = obs-cam_project(v1->estimate().map(Xw));
+    //_error = 30.0*(obs-cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
+    //_error = (0.01+Lk_distance)*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
+    //_error = 10.0*(obs - cam_project(v1->estimate().map(Xw)))/10.0;
   }
 
   bool isDepthPositive() {
@@ -168,6 +171,7 @@ public:
 
   Vector3d Xw;
   double fx, fy, cx, cy;
+  double Lk_distance;
 };
 
 
@@ -185,6 +189,9 @@ public:
     const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
     Vector3d obs(_measurement);
     _error = obs - cam_project(v1->estimate().map(Xw));
+    //_error = 30.0*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
+    //_error = 10.0*(obs - cam_project(v1->estimate().map(Xw)))/10.0;
+    //_error = (0.01+Lk_distance)*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
   }
 
   bool isDepthPositive() {
@@ -199,6 +206,7 @@ public:
 
   Vector3d Xw;
   double fx, fy, cx, cy, bf;
+  double Lk_distance;
 };
 
 

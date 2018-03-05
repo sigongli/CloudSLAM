@@ -29,6 +29,8 @@
 
 #include<stdint-gcc.h>
 
+#include<chrono>
+
 using namespace std;
 
 namespace ORB_SLAM2
@@ -1351,33 +1353,50 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     const bool bBackward = -tlc.at<float>(2)>CurrentFrame.mb && !bMono;
     
     //***这是我的尝试
+
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+// #endif
+//     
+//     std::vector<cv::Point2f> LastF_uv;;
+//     std::vector<cv::Point2f> SupposeCurrentF_uv;
+//     
+//     for(int i=0;i<LastFrame.mvKeys.size();i++)
+//     {
+//       LastF_uv.push_back(LastFrame.mvKeys[i].pt);
+//     }
+//     
+//     std::vector<unsigned char> status;
+//     std::vector<float> error;
+//     
+// //     std::cout<<"Begin calcOpticalFlowPyrLK"<<std::endl;
+//     
+//     //判断前后帧图片读取是否正常
+//     //     char last[256];
+//     //     char current[256];
+//     //     std::sprintf(last,"tmp/LastFrame%d.jpg",n);
+//     //     std::sprintf(current,"tmp/CurrentFrame%d.jpg",n);
+//     //     
+//     //     cv::imwrite(last,LastFrame.image);
+//     //     cv::imwrite(current,CurrentFrame.image);
+// //     cv::imwrite("LastFrame.jpg",LastFrame.image);
+// //     cv::imwrite("CurrentFrame.jpg",CurrentFrame.image);
+//     	
+//     cv::calcOpticalFlowPyrLK(LastFrame.image,CurrentFrame.image,LastF_uv,SupposeCurrentF_uv,status,error);
+//     
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+// #endif
+// 	 double Lk_time1_1= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+	 
+// 	 std::cout<<"Lk_matcher_1=    "<<Lk_time1_1<<std::endl;
     
-    std::vector<cv::Point2f> LastF_uv;;
-    std::vector<cv::Point2f> SupposeCurrentF_uv;
     
-    for(int i=0;i<LastFrame.mvKeys.size();i++)
-    {
-      LastF_uv.push_back(LastFrame.mvKeys[i].pt);
-    }
-    
-    std::vector<unsigned char> status;
-    std::vector<float> error;
-    
-//     std::cout<<"Begin calcOpticalFlowPyrLK"<<std::endl;
-    
-    //判断前后帧图片读取是否正常
-    //     char last[256];
-    //     char current[256];
-    //     std::sprintf(last,"tmp/LastFrame%d.jpg",n);
-    //     std::sprintf(current,"tmp/CurrentFrame%d.jpg",n);
-    //     
-    //     cv::imwrite(last,LastFrame.image);
-    //     cv::imwrite(current,CurrentFrame.image);
-//     cv::imwrite("LastFrame.jpg",LastFrame.image);
-//     cv::imwrite("CurrentFrame.jpg",CurrentFrame.image);
-    
-    
-    cv::calcOpticalFlowPyrLK(LastFrame.image,CurrentFrame.image,LastF_uv,SupposeCurrentF_uv,status,error);
+
 //     std::cout<<"After calcOpticalFlowPyrLK"<<std::endl;
     
     //绘制光流匹配图片
@@ -1408,7 +1427,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     
     //***这是我的尝试
     
-    
+    double Lk_time1_2=0.0;
     for(int i=0; i<LastFrame.N; i++)
     {
         MapPoint* pMP = LastFrame.mvpMapPoints[i];
@@ -1458,6 +1477,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 		int bestDist = 256;
 		int bestIdx2 = -1;
 		
+		//***这是我的尝试:光流验证和光流剔除外点
 		for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
 		{
 		  const size_t i2 = *vit;
@@ -1474,19 +1494,32 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 		    }
 		    
 		    //---3.2.1光流验证---	
+		    
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t3 = std::chrono::monotonic_clock::now();
+// #endif		    
 // 		    double du=CurrentFrame.mvKeys[i2].pt.x-SupposeCurrentF_uv[i].x;
 // 		    double dv=CurrentFrame.mvKeys[i2].pt.y-SupposeCurrentF_uv[i].y;
 // 		    double distance=sqrt(du*du+dv*dv);
-// // 		    std::cout<<"distance=  " <<distance<<std::endl;
-
+// 
+// 		    if(distance>10)
+// 		    {
+// 		      continue;
+// 		    }
+// 		    
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t4 = std::chrono::monotonic_clock::now();
+// #endif
+// 	 Lk_time1_2=Lk_time1_2+ std::chrono::duration_cast<std::chrono::duration<double> >(t4 - t3).count();
+	 
 		    const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
 		    const int dist = DescriptorDistance(dMP,d);
 		    
-// 		    if(distance>10)
-// 		    {
-// // // 		      std::cout<<"distance>10" <<std::endl;
-// 		      continue;
-// 		    }
+
 		    
                     if(dist<bestDist)
                     {
@@ -1518,10 +1551,60 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                         rotHist[bin].push_back(bestIdx2);
                     }
                 }
+                //***这是我的尝试:光流验证和光流剔除外点
+                
+//                 //***未修改前
+//                 for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
+// 		{
+// 		  const size_t i2 = *vit;
+// 		  if(CurrentFrame.mvpMapPoints[i2])
+// 		    if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
+// 		      continue;
+// 		    
+// 		    if(CurrentFrame.mvuRight[i2]>0)
+// 		    {
+// 		      const float ur = u - CurrentFrame.mbf*invzc;
+// 		      const float er = fabs(ur - CurrentFrame.mvuRight[i2]);
+// 		      if(er>radius)
+// 			continue;
+// 		    }
+// 		    
+// 		    const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
+// 		    const int dist = DescriptorDistance(dMP,d);
+// 		    		    
+//                     if(dist<bestDist)
+//                     {
+//                         bestDist=dist;
+//                         bestIdx2=i2;
+//                     }
+//                 }
+// 
+//                 if(bestDist<=TH_HIGH)
+//                 {
+//                     CurrentFrame.mvpMapPoints[bestIdx2]=pMP;
+//                     nmatches++;
+// 		    
+//                     if(mbCheckOrientation)
+//                     {
+//                         float rot = LastFrame.mvKeysUn[i].angle-CurrentFrame.mvKeysUn[bestIdx2].angle;
+//                         if(rot<0.0)
+//                             rot+=360.0f;
+//                         int bin = round(rot*factor);
+//                         if(bin==HISTO_LENGTH)
+//                             bin=0;
+//                         assert(bin>=0 && bin<HISTO_LENGTH);
+//                         rotHist[bin].push_back(bestIdx2);
+//                     }
+//                 }
+//                 //***未修改前
             }
         }
     }
 
+    
+//     std::cout<<"Lk_matcher_time_2=    "<<Lk_time1_2<<std::endl;
+//     std::cout<<"Lk_matcher_time=    "<<Lk_time1_1+Lk_time1_2<<std::endl;
+    
     //Apply rotation consistency
     if(mbCheckOrientation)
     {

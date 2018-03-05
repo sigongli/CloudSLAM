@@ -66,6 +66,7 @@ plt.plot(x_list_draw, y_list_draw, label = "changed", marker='o')
 
 
 legend = plt.legend(loc='upper right', shadow=True)
+plt.axis("equal")
 plt.show()
 
 

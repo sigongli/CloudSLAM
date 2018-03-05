@@ -111,6 +111,10 @@ public:
 
 
     static std::mutex mGlobalMutex;
+    
+     // Tracking counters
+     int mnVisible;
+     int mnFound;
 
 protected:    
 
@@ -129,9 +133,9 @@ protected:
      // Reference KeyFrame
      KeyFrame* mpRefKF;
 
-     // Tracking counters
-     int mnVisible;
-     int mnFound;
+//      // Tracking counters
+//      int mnVisible;
+//      int mnFound;
 
      // Bad flag (we do not currently erase MapPoint from memory)
      bool mbBad;

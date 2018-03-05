@@ -271,9 +271,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vnIndexEdgeStereo.reserve(N);
 
     const float deltaMono = sqrt(5.991);
-    const float deltaMono_lk = sqrt(5.991);
     const float deltaStereo = sqrt(7.815);
-    const float deltaStereo_lk = sqrt(7.815);
+//     const float deltaMono_lk = sqrt(5.991);
+//     const float deltaStereo_lk = sqrt(7.815);
     
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
@@ -298,7 +298,10 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
                 e->setMeasurement(obs);
                 const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+		e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+
+		Eigen::Matrix2d Info = Eigen::Matrix2d::Identity()*invSigma2;
+                e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                 e->setRobustKernel(rk);
@@ -312,6 +315,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->Xw[0] = Xw.at<float>(0);
                 e->Xw[1] = Xw.at<float>(1);
                 e->Xw[2] = Xw.at<float>(2);
+		e->Lk_distance=pFrame->Lk_distances[i];
 
                 optimizer.addEdge(e);
 
@@ -335,7 +339,19 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->setMeasurement(obs);
                 const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
                 Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
-                e->setInformation(Info);
+                //e->setInformation(Info);
+		
+		//给双目点更高权重
+		//e->setInformation(100*Info);
+		
+		//给深度较近的地图点更高权重
+		//e->setInformation(40*Info/pFrame->mvDepth[i]);
+		
+		//根据观测到地图点的关键帧数目给予权重
+		//e->setInformation(pMP->nObs*Info);
+		
+		//根据地图点是否被稳定跟踪来给予权重
+		e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                 e->setRobustKernel(rk);
@@ -349,7 +365,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 cv::Mat Xw = pMP->GetWorldPos();
                 e->Xw[0] = Xw.at<float>(0);
                 e->Xw[1] = Xw.at<float>(1);
-                e->Xw[2] = Xw.at<float>(2);		
+                e->Xw[2] = Xw.at<float>(2);	
+		e->Lk_distance=pFrame->Lk_distances[i];
 
                 optimizer.addEdge(e);
 
@@ -357,11 +374,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 vnIndexEdgeStereo.push_back(i);
             }
         }
-
     }
     }
 
-//3.2.4 分布估计
 
     if(nInitialCorrespondences<3)
         return 0;
@@ -369,9 +384,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
     const float chi2Mono[4]={5.991,5.991,5.991,5.991};
-    const float chi2Mono_lk[4]={deltaMono_lk,deltaMono_lk,deltaMono_lk,deltaMono_lk};
     const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
-    const float chi2Stereo_lk[4]={deltaStereo_lk,deltaStereo_lk,deltaStereo_lk, deltaStereo_lk};
+//     const float chi2Mono_lk[4]={deltaMono_lk,deltaMono_lk,deltaMono_lk,deltaMono_lk};
+//     const float chi2Stereo_lk[4]={deltaStereo_lk,deltaStereo_lk,deltaStereo_lk, deltaStereo_lk};
     const int its[4]={10,10,10,10};    
 
     int nBad=0;
@@ -445,119 +460,197 @@ int Optimizer::PoseOptimization(Frame *pFrame)
             break;
     }  */  
 
-    //***这是我的尝试
+    //***这是我的尝试:光流剔除外点版本1
     
-       for(size_t it=0; it<4; it++)
+//        for(size_t it=0; it<4; it++)
+//     {
+// 
+//         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
+//         optimizer.initializeOptimization(0);
+//         optimizer.optimize(its[it]);
+// 
+//         nBad=0;
+//         for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+//         {
+//             g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
+// 
+//             const size_t idx = vnIndexEdgeMono[i];
+// 
+//             if(pFrame->mvbOutlier[idx])
+//             {
+//                 e->computeError();
+//             }
+//             
+//             if(pFrame->Lk_distances[idx]==0.0)
+// 	    {
+// 	      const float chi2 = e->chi2();
+// 
+// 	      if(chi2>chi2Mono[it])
+// 	      {                
+// 		  pFrame->mvbOutlier[idx]=true;
+// 		  e->setLevel(1);
+// 		  nBad++;
+// 	      }
+// 	      else
+// 	      {
+// 		  pFrame->mvbOutlier[idx]=false;
+// 		  e->setLevel(0);
+// 	      }
+// 	      
+// 	    }
+// 	    else
+// 	    {
+// 	      const float chi2 = e->chi2()/pFrame->Lk_distances[idx];
+// 
+// 	      if(chi2>chi2Mono_lk[it])
+// 	      {                
+// 		  pFrame->mvbOutlier[idx]=true;
+// 		  e->setLevel(1);
+// 		  nBad++;
+// 	      }
+// 	      else
+// 	      {
+// 		  pFrame->mvbOutlier[idx]=false;
+// 		  e->setLevel(0);
+// 	      }
+// 		
+// 	    }
+// 	   
+//             if(it==2)
+//                 e->setRobustKernel(0);
+//         }
+//         
+//         for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+//         {
+//             g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
+// 
+//             const size_t idx = vnIndexEdgeStereo[i];
+// 
+//             if(pFrame->mvbOutlier[idx])
+//             {
+//                 e->computeError();
+//             }
+//             
+//              if(pFrame->Lk_distances[idx]==0.0)
+// 	    {
+// 	      const float chi2 = e->chi2();
+// 
+// 	      if(chi2>chi2Stereo[it])
+// 	      {
+// 		  pFrame->mvbOutlier[idx]=true;
+// 		  e->setLevel(1);
+// 		  nBad++;
+// 	      }
+// 	      else
+// 	      {                
+// 		  e->setLevel(0);
+// 		  pFrame->mvbOutlier[idx]=false;
+// 	      }
+// 	    }
+// 	    else
+// 	    {
+// 	      const float chi2 = e->chi2()/pFrame->Lk_distances[idx];
+// 
+// 	      if(chi2>chi2Stereo_lk[it])
+// 	      {
+// 		  pFrame->mvbOutlier[idx]=true;
+// 		  e->setLevel(1);
+// 		  nBad++;
+// 	      }
+// 	      else
+// 	      {                
+// 		  e->setLevel(0);
+// 		  pFrame->mvbOutlier[idx]=false;
+// 	      }
+// 	      
+// 	    }
+// 	    
+//             if(it==2)
+//                 e->setRobustKernel(0);
+//         }
+// 
+//         if(optimizer.edges().size()<10)
+//             break;
+//     }  
+    //***这是我的尝试:光流剔除外点版本1
+    
+    //***这是我的尝试,光流剔除外点版本2
+    for(size_t it=0; it<4; it++)
     {
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
-        optimizer.initializeOptimization(0);
-        optimizer.optimize(its[it]);
-
-        nBad=0;
-        for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
-        {
-            g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
-
-            const size_t idx = vnIndexEdgeMono[i];
-
-            if(pFrame->mvbOutlier[idx])
-            {
-                e->computeError();
-            }
-            
-            if(pFrame->Lk_distances[idx]==0.0)
-	    {
-	      const float chi2 = e->chi2();
-
-	      if(chi2>chi2Mono[it])
-	      {                
-		  pFrame->mvbOutlier[idx]=true;
-		  e->setLevel(1);
-		  nBad++;
-	      }
-	      else
-	      {
-		  pFrame->mvbOutlier[idx]=false;
-		  e->setLevel(0);
-	      }
-	      
-	    }
-	    else
-	    {
-	      const float chi2 = e->chi2()/pFrame->Lk_distances[idx];
-
-	      if(chi2>chi2Mono_lk[it])
-	      {                
-		  pFrame->mvbOutlier[idx]=true;
-		  e->setLevel(1);
-		  nBad++;
-	      }
-	      else
-	      {
-		  pFrame->mvbOutlier[idx]=false;
-		  e->setLevel(0);
-	      }
-		
-	    }
-	   
-            if(it==2)
-                e->setRobustKernel(0);
-        }
-        
-        for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
-        {
-            g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
-
-            const size_t idx = vnIndexEdgeStereo[i];
-
-            if(pFrame->mvbOutlier[idx])
-            {
-                e->computeError();
-            }
-            
-             if(pFrame->Lk_distances[idx]==0.0)
-	    {
-	      const float chi2 = e->chi2();
-
-	      if(chi2>chi2Stereo[it])
-	      {
-		  pFrame->mvbOutlier[idx]=true;
-		  e->setLevel(1);
-		  nBad++;
-	      }
-	      else
-	      {                
-		  e->setLevel(0);
-		  pFrame->mvbOutlier[idx]=false;
-	      }
-	    }
-	    else
-	    {
-	      const float chi2 = e->chi2()/pFrame->Lk_distances[idx];
-
-	      if(chi2>chi2Stereo_lk[it])
-	      {
-		  pFrame->mvbOutlier[idx]=true;
-		  e->setLevel(1);
-		  nBad++;
-	      }
-	      else
-	      {                
-		  e->setLevel(0);
-		  pFrame->mvbOutlier[idx]=false;
-	      }
-	      
-	    }
+	optimizer.initializeOptimization(0);
+	optimizer.optimize(its[it]);
+	
+	nBad=0;
+	for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
+	{
+	  g2o::EdgeSE3ProjectXYZOnlyPose* e = vpEdgesMono[i];
+	  
+	  const size_t idx = vnIndexEdgeMono[i];
+	  
+	  if(pFrame->mvbOutlier[idx])
+	  {
+	    e->computeError();
+	  }
+	  
+	  const float chi2 = e->chi2();
+	  
+	  if(chi2>chi2Mono[it])
+	  {                
+	    pFrame->mvbOutlier[idx]=true;
+	    e->setLevel(1);
+	    nBad++;
+	  }
+	  else
+	  {
+	    pFrame->mvbOutlier[idx]=false;
+	    e->setLevel(0);
+	  }
+	  
+	  if(it==2)
+              e->setRobustKernel(0);
 	    
+	  }
+	
+	for(size_t i=0, iend=vpEdgesStereo.size(); i<iend; i++)
+	{
+	  g2o::EdgeStereoSE3ProjectXYZOnlyPose* e = vpEdgesStereo[i];
+	  
+	  const size_t idx = vnIndexEdgeStereo[i];
+	  
+	  if(pFrame->mvbOutlier[idx])
+	  {
+	    e->computeError();
+	  }
+	  
+	  const float chi2 = e->chi2();
+	  
+	 
+	    if(chi2>chi2Stereo[it])
+	    {
+	      pFrame->mvbOutlier[idx]=true;
+	      e->setLevel(1);
+	      nBad++;
+	    }
+	    else
+	    {                
+	      e->setLevel(0);
+	      pFrame->mvbOutlier[idx]=false;
+	    }
+	    	    
             if(it==2)
                 e->setRobustKernel(0);
-        }
-
+	 }
+ 
         if(optimizer.edges().size()<10)
             break;
-    }  
-    //***这是我的尝试
+    }    
+    
+    //**这是我的尝试,光流剔除外点数版本2
+    
+    //***这是我的尝试,分步位姿估计
+    //***这是我的尝试:分步位姿估计
 
     // Recover optimized pose and return number of inliers
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));
