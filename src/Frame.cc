@@ -24,6 +24,8 @@
 #include <thread>
 #include "Optimizer.h"
 
+extern double lk_door;
+
 namespace ORB_SLAM2
 {
 
@@ -91,7 +93,8 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
     mvbOutlier = vector<bool>(N,false);
-    Lk_distances=vector<double>(N, 30.0);
+    Lk_distances=vector<double>(N, lk_door);
+    std::cout<<"lk_door=   "<<lk_door<<std::endl;
 
 
     // This is done only for the first Frame (or after a change in the calibration)

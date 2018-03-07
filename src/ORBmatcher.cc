@@ -31,6 +31,7 @@
 
 #include<chrono>
 
+extern double lk_match;
 using namespace std;
 
 namespace ORB_SLAM2
@@ -1354,46 +1355,46 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     
     //***这是我的尝试
 
-// #ifdef COMPILEDWITHC11
-//         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-// #else
-//         std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-// #endif
-//     
-//     std::vector<cv::Point2f> LastF_uv;;
-//     std::vector<cv::Point2f> SupposeCurrentF_uv;
-//     
-//     for(int i=0;i<LastFrame.mvKeys.size();i++)
-//     {
-//       LastF_uv.push_back(LastFrame.mvKeys[i].pt);
-//     }
-//     
-//     std::vector<unsigned char> status;
-//     std::vector<float> error;
+#ifdef COMPILEDWITHC11
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+#else
+        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+#endif
+    
+    std::vector<cv::Point2f> LastF_uv;;
+    std::vector<cv::Point2f> SupposeCurrentF_uv;
+    
+    for(int i=0;i<LastFrame.mvKeys.size();i++)
+    {
+      LastF_uv.push_back(LastFrame.mvKeys[i].pt);
+    }
+    
+    std::vector<unsigned char> status;
+    std::vector<float> error;
 //     
 // //     std::cout<<"Begin calcOpticalFlowPyrLK"<<std::endl;
 //     
-//     //判断前后帧图片读取是否正常
-//     //     char last[256];
-//     //     char current[256];
-//     //     std::sprintf(last,"tmp/LastFrame%d.jpg",n);
-//     //     std::sprintf(current,"tmp/CurrentFrame%d.jpg",n);
-//     //     
-//     //     cv::imwrite(last,LastFrame.image);
-//     //     cv::imwrite(current,CurrentFrame.image);
-// //     cv::imwrite("LastFrame.jpg",LastFrame.image);
-// //     cv::imwrite("CurrentFrame.jpg",CurrentFrame.image);
-//     	
-//     cv::calcOpticalFlowPyrLK(LastFrame.image,CurrentFrame.image,LastF_uv,SupposeCurrentF_uv,status,error);
+    //判断前后帧图片读取是否正常
+    //     char last[256];
+    //     char current[256];
+    //     std::sprintf(last,"tmp/LastFrame%d.jpg",n);
+    //     std::sprintf(current,"tmp/CurrentFrame%d.jpg",n);
+    //     
+    //     cv::imwrite(last,LastFrame.image);
+    //     cv::imwrite(current,CurrentFrame.image);
+//     cv::imwrite("LastFrame.jpg",LastFrame.image);
+//     cv::imwrite("CurrentFrame.jpg",CurrentFrame.image);
+    	
+    cv::calcOpticalFlowPyrLK(LastFrame.image,CurrentFrame.image,LastF_uv,SupposeCurrentF_uv,status,error);
 //     
-// #ifdef COMPILEDWITHC11
-//         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-// #else
-//         std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-// #endif
-// 	 double Lk_time1_1= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+#ifdef COMPILEDWITHC11
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#else
+        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+#endif
+	 double Lk_time1_1= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 	 
-// 	 std::cout<<"Lk_matcher_1=    "<<Lk_time1_1<<std::endl;
+	 std::cout<<"Lk_matcher_1=    "<<Lk_time1_1<<std::endl;
     
     
 
@@ -1500,11 +1501,16 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 // #else
 //         std::chrono::monotonic_clock::time_point t3 = std::chrono::monotonic_clock::now();
 // #endif		    
-// 		    double du=CurrentFrame.mvKeys[i2].pt.x-SupposeCurrentF_uv[i].x;
-// 		    double dv=CurrentFrame.mvKeys[i2].pt.y-SupposeCurrentF_uv[i].y;
-// 		    double distance=sqrt(du*du+dv*dv);
-// 
+		    double du=CurrentFrame.mvKeys[i2].pt.x-SupposeCurrentF_uv[i].x;
+		    double dv=CurrentFrame.mvKeys[i2].pt.y-SupposeCurrentF_uv[i].y;
+		    double distance=sqrt(du*du+dv*dv);
+
 // 		    if(distance>10)
+// 		    {
+// 		      continue;
+// 		    }
+// 		    std::cout<<"lk_match=   "<<lk_match<<std::endl;
+// 		    if(distance>lk_match)
 // 		    {
 // 		      continue;
 // 		    }

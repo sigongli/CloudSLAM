@@ -42,6 +42,7 @@
 #include "types_sba.h"
 #include <Eigen/Geometry>
 
+extern double lk_door;
 namespace g2o {
 namespace types_six_dof_expmap {
 void init();
@@ -50,6 +51,7 @@ void init();
 using namespace Eigen;
 
 typedef Matrix<double, 6, 6> Matrix6d;
+
 
 
 /**
@@ -154,7 +156,7 @@ public:
     const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
     Vector2d obs(_measurement);
     _error = obs-cam_project(v1->estimate().map(Xw));
-    //_error = 30.0*(obs-cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
+    //_error = lk_door*(obs-cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
     //_error = (0.01+Lk_distance)*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
     //_error = 10.0*(obs - cam_project(v1->estimate().map(Xw)))/10.0;
   }
@@ -189,7 +191,7 @@ public:
     const VertexSE3Expmap* v1 = static_cast<const VertexSE3Expmap*>(_vertices[0]);
     Vector3d obs(_measurement);
     _error = obs - cam_project(v1->estimate().map(Xw));
-    //_error = 30.0*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
+    //_error = lk_door*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
     //_error = 10.0*(obs - cam_project(v1->estimate().map(Xw)))/10.0;
     //_error = (0.01+Lk_distance)*(obs - cam_project(v1->estimate().map(Xw)))/(0.01+Lk_distance);
   }

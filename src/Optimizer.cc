@@ -301,7 +301,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 		e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
 
 		Eigen::Matrix2d Info = Eigen::Matrix2d::Identity()*invSigma2;
-                e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
+		e->setInformation(Info);
+                //e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                 e->setRobustKernel(rk);
@@ -339,7 +340,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->setMeasurement(obs);
                 const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
                 Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
-                //e->setInformation(Info);
+                e->setInformation(Info);
 		
 		//给双目点更高权重
 		//e->setInformation(100*Info);
@@ -351,7 +352,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 		//e->setInformation(pMP->nObs*Info);
 		
 		//根据地图点是否被稳定跟踪来给予权重
-		e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
+		//e->setInformation(10*pMP->mnFound/pMP->mnVisible*Info);
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                 e->setRobustKernel(rk);

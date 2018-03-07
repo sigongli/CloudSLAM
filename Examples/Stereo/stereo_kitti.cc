@@ -29,6 +29,9 @@
 
 #include<System.h>
 
+double lk_match;
+double lk_door;
+
 using namespace std;
 
 void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
@@ -42,11 +45,25 @@ int main(int argc, char **argv)
 //         return 1;
 //     }
     
-    if(argc != 5)
+//     if(argc != 5)
+//     {
+//         cerr << endl << "Usage: ./stereo_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
+//         return 1;
+//     }
+  
+   if(argc != 7)
     {
         cerr << endl << "Usage: ./stereo_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
+    
+     stringstream s_lk_match;
+     s_lk_match << argv[5];
+     s_lk_match >> lk_match;
+     
+     stringstream s_lk_door;
+     s_lk_door << argv[6];
+     s_lk_door >> lk_door;
 
     // Retrieve paths to images
     vector<string> vstrImageLeft;
